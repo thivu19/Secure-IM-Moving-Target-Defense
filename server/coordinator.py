@@ -3,8 +3,8 @@
 
     Description: 
     - user table, availability, and chat setup.
-    - Holds all the server's in-memory state (no database needed). Thread-safe:
-        every method that touches shared dicts takes the lock. Each connected client
+    - Holds all the server's in-memory state (no database needed). 
+    - Thread-safe: every method that touches shared dicts takes the lock. Each connected client
         has one ClientHandle; the coordinator pairs clients up for chats and tracks
         their state.
     - Covers functional requirements 3.1 (multi-client state) and 3.2 (discovery +
@@ -87,6 +87,11 @@ class Coordinator:
             a = self._clients.get(frm)
             b = self._clients.get(to)
             if not (a and b):
+                return None
+            # Guard double-accept: only pair if both are still PENDING with each other.
+            if a.state is not State.PENDING or b.state is not State.PENDING:
+                return None
+            if a.peer != to or b.peer != frm:
                 return None
             sid = f"S{self._next_session}"
             self._next_session += 1

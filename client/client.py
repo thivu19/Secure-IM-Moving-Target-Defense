@@ -163,8 +163,10 @@ class Client:
 
             elif line.startswith("/accept "):
                 frm = line.split(None, 1)[1].strip()
-                if frm and frm == self.pending_from:
+                if (self.state is State.PENDING and frm
+                        and frm == self.pending_from):
                     self.send({"type": M.ACCEPT, "from": frm})
+                    self.pending_from = None
                 else:
                     print("No pending invite from that user.")
 
