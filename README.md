@@ -15,26 +15,30 @@ Implement a small Instant Messaging (IM) system in which users can find one anot
 1. Create and activate a virtual environment:
 
 ```bash
-   python -m venv .venv
+python -m venv .venv
 
-   # In Mac:
-   source .venv/bin/activate     
+# On Mac:
+source .venv/bin/activate     
 
-   # In Windows: 
-   .venv\Scripts\activate
+# On Windows: 
+.venv\Scripts\activate
 ```
 
 2. Install dependencies:
 
 ```bash
-   pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 --- 
 
+## Scope
+
 **Note:** 
 - This current version is for Section 3: Functional IM Application. 
-- To be added later in next stages: Section 4: Security of the IM Application and Section 5: Moving-Target Defense
+- To be added later in next stages: Section 4: Security of the IM Application and Section 5: Moving-Target Defense.
+
+---
 
 ## Running
 
@@ -74,3 +78,29 @@ The server coordinates the chat setup, but messages are sent **directly**
 between the two clients — the server never relays chat content.
 
 --- 
+
+## Project Structure 
+
+Current Layout (for Section 3: Functional IM Application)
+
+```
+Secure-IM-Moving-Target-Defense/
+├── main.py              # Launcher: python main.py server | client <user>
+├── settings.py          # Shared constants (host, ports)
+├── requirements.txt
+├── common/              # Shared by server and client
+│   ├── __init__.py
+│   ├── framing.py       # Length-prefixed message framing over TCP
+│   ├── messages.py      # Message types + encode/decode helpers
+│   └── state.py         # Client states (READY / PENDING / CHATTING)
+├── server/
+│   ├── __init__.py
+│   ├── coordinator.py   # User table, availability, chat setup
+│   └── server.py        # Accept loop + per-client dispatch
+└── client/
+    ├── __init__.py
+    ├── client.py        # Command-line client (interactive prompt + server connection)
+    └── chat.py          # Direct client-to-client chat connection
+```
+
+---
