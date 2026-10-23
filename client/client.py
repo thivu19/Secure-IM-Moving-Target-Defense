@@ -3,7 +3,7 @@
 
     Description:
     - the command-line client.
-    - Functional (unsecured) version. Connects to the server, logs in by name, and
+    - Functional (unsecured) version (Section 3). Connects to the server, logs in by name, and
         gives you a prompt:
 
             /list              show available users
@@ -124,6 +124,12 @@ class Client:
         self.state = State.READY
         self.chat_conn = None
         self.pending_from = None
+        # Tell the server we're free again (chat end is peer-to-peer, so the
+        # server doesn't know otherwise). Harmless if sent more than once.
+        try:
+            self.send({"type": M.END_SESSION})
+        except OSError:
+            pass
         print("\n[back to READY — you can /list or /chat again]\n> ", end="")
 
     # ---- command handling ----
@@ -209,4 +215,3 @@ def main(user=None):
 
 if __name__ == "__main__":
     main()
-    

@@ -97,6 +97,11 @@ def handle_client(conn, addr):
                 if fh:
                     send(fh.conn, {"type": M.ERROR, "reason": f"{user} declined"})
 
+            elif t == M.END_SESSION:
+                me = coordinator.get(user)
+                peer = me.peer if me else None
+                coordinator.cancel(user, peer)
+
             elif t == M.LOGOUT:
                 break
 

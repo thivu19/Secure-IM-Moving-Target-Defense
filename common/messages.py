@@ -1,14 +1,13 @@
 """
-    File: common/messages.py 
-    
-    Description: 
-    - the shared message contract.
-    - Every message on the wire is a JSON object with a "type" field. These constants
-        are the single source of truth for those type names, so server and client never
-        disagree about spelling. Agree on this file as a team FIRST; everyone imports it.
+    File: common/messages.py
 
-    - Helpers at the bottom turn a dict into bytes and back, so callers don't repeat 
-        json.dumps / json.loads everywhere.
+    Description:
+    - The shared message contract.
+    - Every message on the wire is a JSON object with a "type" field.
+    - These constants are the single source of truth for those type names, so
+        the server and client never disagree about spelling.
+    - The encode()/decode() helpers at the bottom turn a dict into bytes and
+        back, so callers do not repeat json.dumps / json.loads everywhere.
 """
 import json
 
@@ -18,6 +17,7 @@ LIST          = "LIST"           # {type}                       ask who's online
 REQUEST       = "REQUEST"        # {type, peer}                 ask to chat with peer
 ACCEPT        = "ACCEPT"         # {type, from}                 accept an invite
 DECLINE       = "DECLINE"        # {type, from}                 decline an invite
+END_SESSION   = "END_SESSION"    # {type}                       left a chat, free again
 LOGOUT        = "LOGOUT"         # {type}
 
 # ---- Server -> Client ----
