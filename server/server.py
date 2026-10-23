@@ -1,8 +1,9 @@
 """
-    File: server/server.py — accept loop + per-client dispatch.
-    
-    Description: 
-    - Functional (unsecured) version. 
+    File: server/server.py — 
+
+    Description:
+    - accept loop + per-client dispatch.
+    - Functional (unsecured) version (Section 3)
     - It handles:
         - multiple clients, one thread each   (3.1)
         - login by name                       (FOR LATER STAGES: becomes signed auth in Section 4)
@@ -35,9 +36,11 @@ def recv(conn):
 def handle_client(conn, addr):
     user = None
     try:
-        conn.settimeout(settings.IDLE_TIMEOUT_SEC)
+        # NOTE: no idle timeout here. During a chat, all traffic goes directly
+        # between the two clients, so this control socket is legitimately silent.
+        # A timeout would drop active chatters. (FOR LATER STAGES: add keepalives.)
 
-        # Login (FOR LATER STAGES - SECURE: replace with challenge/response in Section 4) 
+        # Login (FOR LATER STAGES - SECURE: replace with challenge/response in Section 4)
         hello = recv(conn)
         if hello.get("type") != M.LOGIN_HELLO:
             send(conn, {"type": M.LOGIN_FAIL, "reason": "expected LOGIN_HELLO"})
@@ -114,12 +117,22 @@ def main():
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     srv.bind((settings.SERVER_HOST, settings.SERVER_PORT))
     srv.listen()
+    srv.settimeout(1.0)          # wake up each second so Ctrl+C is noticed
     print(f"Server on {settings.SERVER_HOST}:{settings.SERVER_PORT}")
-    while True:
-        conn, addr = srv.accept()
-        threading.Thread(target=handle_client, args=(conn, addr),
-                         daemon=True).start()
+    try:
+        while True:
+            try:
+                conn, addr = srv.accept()
+            except socket.timeout:
+                continue
+            threading.Thread(target=handle_client, args=(conn, addr),
+                             daemon=True).start()
+    except KeyboardInterrupt:
+        print("\nShutting down server.")
+    finally:
+        srv.close()
 
 
 if __name__ == "__main__":
     main()
+    
