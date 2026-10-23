@@ -1,7 +1,7 @@
 """
-    File: client/client.py 
+    File: client/client.py
 
-    Description: 
+    Description:
     - the command-line client.
     - Functional (unsecured) version. Connects to the server, logs in by name, and
         gives you a prompt:
@@ -17,13 +17,14 @@
     - A background thread listens to the server so invites/session notices arrive
         while you're typing.
 
-    FOR LATER STAGES: 
+    FOR LATER STAGES:
     - SECURE HOOK (Section 4): replace login with the signed challenge-response;
         wrap the server socket in a SecureChannel.
 """
 import socket
 import sys
 import threading
+import time
 
 import settings
 from common import messages as M
@@ -97,10 +98,22 @@ class Client:
                 print(f"\n[connected with {peer}, session {sid}]")
             threading.Thread(target=wait, daemon=True).start()
         else:
-            self.chat_conn.connect(msg["peer_host"], msg["peer_port"])
-            self.chat_conn.start_receiver(self._print_incoming,
-                                          self._on_chat_closed)
-            print(f"\n[connected with {peer}, session {sid}]")
+            def dial():
+                for _ in range(10):
+                    try:
+                        self.chat_conn.connect(msg["peer_host"], msg["peer_port"])
+                        break
+                    except (ConnectionRefusedError, OSError):
+                        time.sleep(0.2)
+                else:
+                    print(f"\n[could not reach {peer}]\n> ", end="")
+                    self.state = State.READY
+                    self.chat_conn = None
+                    return
+                self.chat_conn.start_receiver(self._print_incoming,
+                                              self._on_chat_closed)
+                print(f"\n[connected with {peer}, session {sid}]\n> ", end="")
+            threading.Thread(target=dial, daemon=True).start()
         self.state = State.CHATTING
 
     def _print_incoming(self, line):
@@ -140,6 +153,7 @@ class Client:
                     print("You're already in a chat or have a pending invite.")
                 else:
                     self.send({"type": M.REQUEST, "peer": peer})
+                    self.state = State.PENDING
 
             elif line.startswith("/accept "):
                 frm = line.split(None, 1)[1].strip()
@@ -195,3 +209,4 @@ def main(user=None):
 
 if __name__ == "__main__":
     main()
+    

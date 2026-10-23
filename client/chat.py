@@ -1,8 +1,9 @@
 """
-    File: client/chat.py — direct client-to-client chat (requirement 3.3).
-    
-    Description: 
-    - After the server hands out SESSION_START, the two clients talk DIRECTLY here 
+    File: client/chat.py 
+
+    Description:
+    - direct client-to-client chat (requirement 3.3).
+    - After the server hands out SESSION_START, the two clients talk DIRECTLY here
         nothing goes back through the server. One side listens (responder), the other
         connects (initiator); the server told each which role it has.
     - A background thread prints incoming messages so the user can type and receive
@@ -65,12 +66,17 @@ class ChatConnection:
                     self._on_message(f"[{self.peer} ended the chat]")
                     break
                 elif msg.get("type") == M.CHAT_MSG:
-                    self._on_message(f"{self.peer}: {msg['text']}")
+                    self._on_message(f"{self.peer}: {msg.get('text', '')}")
         except (ConnectionError, ValueError, OSError):
             if self.alive:
                 self._on_message(f"[connection to {self.peer} lost]")
         finally:
             self.alive = False
+            if self.sock:
+                try:
+                    self.sock.close()
+                except OSError:
+                    pass
             if self._on_close:
                 self._on_close()
 
@@ -85,11 +91,15 @@ class ChatConnection:
             try:
                 send_msg(self.sock, M.encode({"type": M.CHAT_END,
                                               "session_id": self.session_id}))
+                self.sock.shutdown(socket.SHUT_WR)   # flush CHAT_END before close
             except OSError:
                 pass
         self.alive = False
         if self.sock:
-            self.sock.close()
+            try:
+                self.sock.close()
+            except OSError:
+                pass
 
 
 def pick_p2p_port():
