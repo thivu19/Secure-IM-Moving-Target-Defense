@@ -33,6 +33,14 @@ ERROR           = "ERROR"            # {type, reason}
 CHAT_MSG      = "CHAT_MSG"        # {type, session_id, text}
 CHAT_END      = "CHAT_END"        # {type, session_id}
 
+# ---- Section 4: Authentication (client <-> server) ---
+LOGIN_CHALLENGE = "LOGIN_CHALLENGE"   # Server->Client {server_nonce, dh_pub}
+LOGIN_PROVE     = "LOGIN_PROVE"       # Client->Server {signature}
+# ---- Section 4: Client-to-client handshake ---
+PEER_DH         = "PEER_DH"           # {dh_pub, nonce, signature}
+# ---- Section 5: Migration ---
+MIGRATE         = "MIGRATE"           #  {new_port, token, epoch}  (sealed)
+MIGRATE_ACK     = "MIGRATE_ACK"       # {proof}  HMAC over token+epoch
 
 def encode(obj: dict) -> bytes:
     """dict -> bytes ready for framing.send_msg."""

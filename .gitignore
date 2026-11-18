@@ -13,3 +13,7 @@ env/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Section 4 keys - never commit private keys
+keys/
+*.pem
