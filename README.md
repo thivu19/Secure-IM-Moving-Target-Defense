@@ -198,6 +198,9 @@ Mapping of requirement to code: To show where each requirement was implemented.
 | 4.5 Integrity | `common/secure_channel.py` (HMAC tag, verified before decrypt) |
 | 4.6 Freshness & protocol state | `common/secure_channel.py` (sequence numbers + session id); `common/state.py` + `server/coordinator.py` (state machine) |
 
+**Section 5 — Moving-Target Defense**
+To be added in next stage
+
 **Supporting modules** (used across the requirements above, not tied to a single one)
 
 | File | Role |
