@@ -1,13 +1,9 @@
 """
-    File: main.py 
+    File: main.py
     
-    Description: launcher (Section 3 version)
-
-    To run:
-    python main.py server
-    python main.py client alice
-
-    FOR LATER STAGES: add `attack` and `test` dispatch for Sections 4 and 5.
+    Description: Launcher.
+        python main.py server
+        python main.py client <user>
 """
 import sys
 
@@ -28,7 +24,13 @@ def main():
         m()
     elif role == "client" and len(sys.argv) >= 3:
         from client.client import main as m
-        m(sys.argv[2])
+        # optional: "--key <other>" signs with another user's key (impersonation demo)
+        key_user = None
+        if "--key" in sys.argv:
+            i = sys.argv.index("--key")
+            if i + 1 < len(sys.argv):
+                key_user = sys.argv[i + 1]
+        m(sys.argv[2], key_user)
     else:
         usage()
 
