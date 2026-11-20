@@ -1,14 +1,14 @@
 """
-    File: server/coordinator.py 
+    File: server/coordinator.py
 
-    Description: 
-    - user table, availability, and chat setup.
-    - Holds all the server's in-memory state (no database needed). 
-    - Thread-safe: every method that touches shared dicts takes the lock. Each connected client
-        has one ClientHandle; the coordinator pairs clients up for chats and tracks
-        their state.
+    Description:
+    - User table, availability, and chat setup. Holds all the server's in-memory
+      state (no database needed).
+    - Thread-safe: every method that touches the shared dict takes the lock. Each
+      connected client has one ClientHandle; the coordinator pairs clients up for
+      chats and tracks their state.
     - Covers functional requirements 3.1 (multi-client state) and 3.2 (discovery +
-        chat establishment).
+      chat establishment); Section 4 adds per-client auth state + a SecureChannel.
 """
 import threading
 
@@ -19,29 +19,33 @@ class ClientHandle:
     """What the server knows about one connected client."""
     def __init__(self, user, conn, host, p2p_port):
         self.user = user
-        self.conn = conn            # the client-server socket
-        self.host = host            # where its direct-chat listener lives
+        self.conn = conn                   # the client-server socket
+        self.host = host                   # where its direct-chat listener lives
         self.p2p_port = p2p_port
         self.state = State.READY
-        self.peer = None            # username of current/pending peer
+        self.peer = None                   # username of current/pending peer
         self.session_id = None
+        # ---- Security ----
+        self.authenticated = False         # set True once the signed login succeeds
+        self.chan = None                   # server-side SecureChannel for this client
+        self.send_lock = threading.Lock()  # serialize seals (other threads send to us too)
 
 
 class Coordinator:
     def __init__(self):
-        self._clients = {}          # user -> ClientHandle
+        self._clients = {}                 # user -> ClientHandle
         self._lock = threading.Lock()
         self._next_session = 1
 
     # ---- connection lifecycle ----
-    def add(self, handle: ClientHandle) -> bool:
+    def add(self, handle):
         with self._lock:
             if handle.user in self._clients:
-                return False        # name already online
+                return False               # name already online
             self._clients[handle.user] = handle
             return True
 
-    def remove(self, user: str):
+    def remove(self, user):
         with self._lock:
             h = self._clients.pop(user, None)
             # If they were chatting, free the peer.
@@ -52,25 +56,25 @@ class Coordinator:
                     peer.peer = None
                     peer.session_id = None
 
-    def get(self, user: str):
+    def get(self, user):
         with self._lock:
             return self._clients.get(user)
 
     # ---- discovery ----
-    def available_users(self, excluding: str):
+    def available_users(self, excluding):
         with self._lock:
             return [u for u, h in self._clients.items()
                     if u != excluding and h.state is State.READY]
 
     # ---- chat setup ----
-    def start_invite(self, frm: str, to: str):
-        """Mark both parties PENDING if both are free. Returns status string."""
+    def start_invite(self, frm, to):
+        """Mark both parties PENDING if both are free. Returns a status string."""
         with self._lock:
             if frm == to:
-                return "self"               # can't chat with yourself
+                return "self"                       # can't chat with yourself
             a = self._clients.get(frm)
             b = self._clients.get(to)
-            if not b:
+            if not b or not b.authenticated:        # peer must exist and be authenticated
                 return "no_such_user"
             if a.state is not State.READY or b.state is not State.READY:
                 return "busy"
@@ -78,11 +82,9 @@ class Coordinator:
             a.peer, b.peer = to, frm
             return "ok"
 
-    def confirm_session(self, frm: str, to: str):
+    def confirm_session(self, frm, to):
         """Both accepted: assign one session id, move both to CHATTING.
-
-        Returns (session_id, handle_a, handle_b) or None.
-        """
+        Returns (session_id, handle_a, handle_b) or None."""
         with self._lock:
             a = self._clients.get(frm)
             b = self._clients.get(to)
@@ -99,8 +101,8 @@ class Coordinator:
             a.state = b.state = State.CHATTING
             return sid, a, b
 
-    def cancel(self, frm: str, to: str):
-        """Invite declined/cancelled: both back to READY."""
+    def cancel(self, frm, to):
+        """Invite declined/cancelled, or a chat ended: both back to READY."""
         with self._lock:
             for u in (frm, to):
                 h = self._clients.get(u)
