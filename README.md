@@ -196,11 +196,20 @@ Mapping of requirement to code: To show where each requirement was implemented.
 | 4.3 Secure session establishment | `client/handshake.py` (authenticated Diffie-Hellman) |
 | 4.4 Confidentiality | `common/secure_channel.py` (`seal`/`open`) + `common/crypto.py` (`keystream`) |
 | 4.5 Integrity | `common/secure_channel.py` (HMAC tag, verified before decrypt) |
-| 4.6 Freshness & protocol state | `common/secure_channel.py` (sequence numbers + session id); `server/coordinator.py` (state machine) |
+| 4.6 Freshness & protocol state | `common/secure_channel.py` (sequence numbers + session id); `common/state.py` + `server/coordinator.py` (state machine) |
 
+**Supporting modules** (used across the requirements above, not tied to a single one)
 
-**Section 5 — Moving-Target Defense**
-To be added in next stage
+| File | Role |
+|---|---|
+| `main.py` | Launcher / CLI entry point; also parses the `--key` impersonation-demo flag |
+| `settings.py` | Shared configuration (host, ports, `KEYS_DIR`, `DEBUG`, Section 5 MTD knobs) |
+| `common/framing.py` | Length-prefixed framing under every TCP message |
+| `common/messages.py` | Message-type constants + `encode`/`decode` (including the sealed message frame) |
+| `tools/genkeys.py` | One-time RSA-2048 key provisioning (see Setup) |
+| `tools/test_attacks.py` | Attack demonstrations (demo items 2 & 4) |
+
+Each package's `__init__.py` is an empty marker that makes the directory importable.
 
 ---
 
