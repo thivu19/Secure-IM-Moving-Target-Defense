@@ -1,17 +1,14 @@
 """
     File: common/framing.py
     
-    Description: 
-    - Length-prefixed message framing over a TCP socket. 
-    - TCP is a byte stream: one send() can arrive as several recv() chunks, or two
-        sends can arrive glued together. We fix that by prefixing every message with
-        its length as a 4-byte big-endian integer.
-    - This file is the foundation everything else sends through, including the
-    encrypted frames added later.
+    Description:
+    - Length-prefixed message framing over a TCP socket. TCP is a byte stream, so
+      we prefix every message with its length (4-byte big-endian) to split it back
+      into whole messages. Everything is sent through here, including sealed frames.
 """
 import struct
 
-MAX_MSG = 64 * 1024  # refuse absurdly large frames (basic DoS hygiene)
+MAX_MSG = 64 * 1024  # refuse very large frames 
 
 
 def send_msg(sock, data: bytes) -> None:
